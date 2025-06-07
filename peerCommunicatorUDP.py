@@ -10,7 +10,7 @@ from requests import get
 
 # Counter to make sure we have received handshakes from all other processes
 handShakeCount = 0
-handshake_event = threading.Event()
+
 PEERS = []
 
 # UDP sockets to send and receive data messages:
@@ -44,7 +44,6 @@ def registerWithGroupManager():
   clientSock.close()
 
 def getListOfPeers():
-  global PEERS
   clientSock = socket(AF_INET, SOCK_STREAM)
   print ('Connecting to group manager: ', (GROUPMNGR_ADDR,GROUPMNGR_TCP_PORT))
   clientSock.connect((GROUPMNGR_ADDR,GROUPMNGR_TCP_PORT))
@@ -59,10 +58,9 @@ def getListOfPeers():
   return PEERS
 
 class MsgHandler(threading.Thread):
-  def __init__(self, sock, my_self_id):
+  def __init__(self, sock):
     threading.Thread.__init__(self)
     self.sock = sock
-    self.myself_id = my_self_id
 
   def run(self):
     print('Handler is ready. Waiting for the handshakes...')
@@ -83,8 +81,6 @@ class MsgHandler(threading.Thread):
         # To do: send reply of handshake and wait for confirmation
 
         handShakeCount = handShakeCount + 1
-        if handShakeCount == N:
-          handshake_event.set()
         #handShakes[msg[1]] = 1
         print('--- Handshake received: ', msg[1])
 
@@ -103,7 +99,7 @@ class MsgHandler(threading.Thread):
         logList.append(msg)
         
     # Write log file
-    logFile = open('logfile'+str(self.myself_id)+'.log', 'w')
+    logFile = open('logfile'+str(myself)+'.log', 'w')
     logFile.writelines(str(logList))
     logFile.close()
     
@@ -148,7 +144,7 @@ while 1:
   time.sleep(5)
 
   # Create receiving message handler
-  msgHandler = MsgHandler(recvSocket, myself)
+  msgHandler = MsgHandler(recvSocket)
   msgHandler.start()
   print('Handler started')
 

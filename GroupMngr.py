@@ -25,6 +25,6 @@ def serverLoop():
     else:
       pass # fix (send back an answer in case of unknown op
 
-    conn.close()
+  conn.close()
 
 serverLoop()
