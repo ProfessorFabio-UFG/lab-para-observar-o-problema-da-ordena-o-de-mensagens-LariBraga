@@ -63,9 +63,9 @@ def waitForLogsAndCompare(N_MSGS):
 	unordered = 0
 
 	# Compare the lists of messages
-	for j in range(0,N_MSGS-1):
+	for j in range(N_MSGS):
 		firstMsg = msgs[0][j]
-		for i in range(1,N-1):
+		for i in range(N):
 			if firstMsg != msgs[i][j]:
 				unordered = unordered + 1
 				break
