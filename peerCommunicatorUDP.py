@@ -154,21 +154,22 @@ class MsgHandler(threading.Thread):
             print('Message ' + str(msg[1]) + ' from process ' + str(msg[0]))
             logList.append(msg)
           
-      # Write log file
-      logFile = open('logfile'+str(myself)+'.log', 'w')
-      logFile.writelines(str(logList))
-      logFile.close()
-      
-      # Send the list of messages to the server (using a TCP socket) for comparison
-      print('Sending the list of messages to the server for comparison...')
-      clientSock = socket(AF_INET, SOCK_STREAM)
-      clientSock.connect((SERVER_ADDR, SERVER_PORT))
-      msgPack = pickle.dumps(logList)
-      clientSock.send(msgPack)
-      clientSock.close()
+            # Write log file
+            logFile = open('logfile'+str(myself)+'.log', 'w')
+            logFile.writelines(str(logList))
+            logFile.close()
+            
+            # Send the list of messages to the server (using a TCP socket) for comparison
+            print('Sending the list of messages to the server for comparison...')
+            clientSock = socket(AF_INET, SOCK_STREAM)
+            clientSock.connect((SERVER_ADDR, SERVER_PORT))
+            msgPack = pickle.dumps(logList)
+            clientSock.send(msgPack)
+            clientSock.close()
       
       # Reset the handshake counter
       handShakeCount = 0
+      handConfirm = 0
 
       exit(0)
 
