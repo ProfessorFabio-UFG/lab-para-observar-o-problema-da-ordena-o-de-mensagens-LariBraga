@@ -73,6 +73,8 @@ class MsgHandler(threading.Thread):
     
     #global handShakes
     global handShakeCount
+
+    global handConfirm
     
     logList = []
     
