@@ -12,6 +12,8 @@ from requests import get
 # Counter to make sure we have received handshakes from all other processes
 handShakeCount = 0
 
+handConfirm = 0
+
 PEERS = []
 
 # UDP sockets to send and receive data messages:
@@ -88,81 +90,85 @@ class MsgHandler(threading.Thread):
         #handShakes[msg[1]] = 1
         print('--- Handshake received: ', msg[1])
 
-    print('Secondary Thread: Received all handshakes. Entering the loop to receive messages.')
+    handConfirm += 1
 
-    stopCount=0 
-    while True:                
-      msgPack = self.sock.recv(1024)   # receive data from client
-      msg = pickle.loads(msgPack)
-      self.clock = max(self.clock, msg[2]) + 1 # update Lamport's clock
-      
-      if msg[3] == 'data':
-        self.pending.append(msg) # add msg to queue
-        msg[3] = 'ack'
-        self.clock += 1 # update clock
-        msg[2] = self.clock
-        msgPack = pickle.dumps(msg)
-        sendSocket.sendto(msgPack, (PEERS[msg[0]], PEER_UDP_PORT)) # send ack to sender
-      elif msg[3] == 'ack':
-        self.ack.append((msg[0], msg[1], msg[2])) # (process, msg, clock)
-        # Search menssage
-        for i in range(len(self.pending)):
-          if msg[0] == self.pending[i][0] and msg[1] == self.pending[i][1]:
-            position = i
-            break
+    if handConfirm == N:
 
-        if msg[0] == myself:
-          if self.ack.count((msg[0], msg[1], msg[2])) == N: # all acks arrived
-            j = 0
-            while j <= N: # define clock
-              if self.ack[j] == (msg[0], msg[1], msg[2]):
-                j += 1
-                if j == 1:
-                  maxClock = self.ack[j][2]
-                elif maxClock < self.ack[j][2]:
-                  maxClock = self.ack[j][2]
+      print('Secondary Thread: Received all handshakes. Entering the loop to receive messages.')
 
-            msg[2] = maxClock
-            msg[3] = 'final' # indicates that the final clock has been decided
-            msgPack = pickle.dumps(msg)
-            self.clock += 1
-            for addrToSend in PEERS: # send the final clock to all peers
-              sendSocket.sendto(msgPack, (addrToSend,PEER_UDP_PORT))
-      else: # msg[3] == 'final'
-        if msg[0] == -1:   # count the 'stop' messages from the other processes
-          stopCount = stopCount + 1
-          if stopCount == N:
-            break  # stop loop when all other processes have finished
-        else: 
+      stopCount=0 
+      while True:                
+        msgPack = self.sock.recv(1024)   # receive data from client
+        msg = pickle.loads(msgPack)
+        self.clock = max(self.clock, msg[2]) + 1 # update Lamport's clock
+        
+        if msg[3] == 'data':
+          self.pending.append(msg) # add msg to queue
+          msg[3] = 'ack'
+          self.clock += 1 # update clock
+          msg[2] = self.clock
+          msgPack = pickle.dumps(msg)
+          sendSocket.sendto(msgPack, (PEERS[msg[0]], PEER_UDP_PORT)) # send ack to sender
+        elif msg[3] == 'ack':
+          self.ack.append((msg[0], msg[1], msg[2])) # (process, msg, clock)
+          # Search menssage
           for i in range(len(self.pending)):
             if msg[0] == self.pending[i][0] and msg[1] == self.pending[i][1]:
               position = i
               break
+
+          if msg[0] == myself:
+            if self.ack.count((msg[0], msg[1], msg[2])) == N: # all acks arrived
+              j = 0
+              while j <= N: # define clock
+                if self.ack[j] == (msg[0], msg[1], msg[2]):
+                  j += 1
+                  if j == 1:
+                    maxClock = self.ack[j][2]
+                  elif maxClock < self.ack[j][2]:
+                    maxClock = self.ack[j][2]
+
+              msg[2] = maxClock
+              msg[3] = 'final' # indicates that the final clock has been decided
+              msgPack = pickle.dumps(msg)
+              self.clock += 1
+              for addrToSend in PEERS: # send the final clock to all peers
+                sendSocket.sendto(msgPack, (addrToSend,PEER_UDP_PORT))
+        else: # msg[3] == 'final'
+          if msg[0] == -1:   # count the 'stop' messages from the other processes
+            stopCount = stopCount + 1
+            if stopCount == N:
+              break  # stop loop when all other processes have finished
+          else: 
+            for i in range(len(self.pending)):
+              if msg[0] == self.pending[i][0] and msg[1] == self.pending[i][1]:
+                position = i
+                break
+            
+            self.pending[position][2] = msg[2]
+            self.pending = sorted(self.pending, key=itemgetter(2)) # orderning for clock
+            self.pending = sorted(self.pending, key=itemgetter(3), reverse=True) # ordernig for type
+
+            print('Message ' + str(msg[1]) + ' from process ' + str(msg[0]))
+            logList.append(msg)
           
-          self.pending[position][2] = msg[2]
-          self.pending = sorted(self.pending, key=itemgetter(2)) # orderning for clock
-          self.pending = sorted(self.pending, key=itemgetter(3), reverse=True) # ordernig for type
+      # Write log file
+      logFile = open('logfile'+str(myself)+'.log', 'w')
+      logFile.writelines(str(logList))
+      logFile.close()
+      
+      # Send the list of messages to the server (using a TCP socket) for comparison
+      print('Sending the list of messages to the server for comparison...')
+      clientSock = socket(AF_INET, SOCK_STREAM)
+      clientSock.connect((SERVER_ADDR, SERVER_PORT))
+      msgPack = pickle.dumps(logList)
+      clientSock.send(msgPack)
+      clientSock.close()
+      
+      # Reset the handshake counter
+      handShakeCount = 0
 
-          print('Message ' + str(msg[1]) + ' from process ' + str(msg[0]))
-          logList.append(msg)
-        
-    # Write log file
-    logFile = open('logfile'+str(myself)+'.log', 'w')
-    logFile.writelines(str(logList))
-    logFile.close()
-    
-    # Send the list of messages to the server (using a TCP socket) for comparison
-    print('Sending the list of messages to the server for comparison...')
-    clientSock = socket(AF_INET, SOCK_STREAM)
-    clientSock.connect((SERVER_ADDR, SERVER_PORT))
-    msgPack = pickle.dumps(logList)
-    clientSock.send(msgPack)
-    clientSock.close()
-    
-    # Reset the handshake counter
-    handShakeCount = 0
-
-    exit(0)
+      exit(0)
 
 # Function to wait for start signal from comparison server:
 def waitToStart():
