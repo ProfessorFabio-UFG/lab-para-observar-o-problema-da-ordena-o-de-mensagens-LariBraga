@@ -94,7 +94,7 @@ class MsgHandler(threading.Thread):
 
     handConfirm += 1
 
-    if handConfirm % N == 0:
+    if True:
 
       print('Secondary Thread: Received all handshakes. Entering the loop to receive messages.')
 
