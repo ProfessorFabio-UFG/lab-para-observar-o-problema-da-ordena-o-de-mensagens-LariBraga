@@ -154,18 +154,18 @@ class MsgHandler(threading.Thread):
             print('Message ' + str(msg[1]) + ' from process ' + str(msg[0]))
             logList.append((msg[0], msg[1]))
           
-            # Write log file
-            logFile = open('logfile'+str(myself)+'.log', 'w')
-            logFile.writelines(str(logList))
-            logFile.close()
+      # Write log file
+      logFile = open('logfile'+str(myself)+'.log', 'w')
+      logFile.writelines(str(logList))
+      logFile.close()
             
-            # Send the list of messages to the server (using a TCP socket) for comparison
-            print('Sending the list of messages to the server for comparison...')
-            clientSock = socket(AF_INET, SOCK_STREAM)
-            clientSock.connect((SERVER_ADDR, SERVER_PORT))
-            msgPack = pickle.dumps(logList)
-            clientSock.send(msgPack)
-            clientSock.close()
+      # Send the list of messages to the server (using a TCP socket) for comparison
+      print('Sending the list of messages to the server for comparison...')
+      clientSock = socket(AF_INET, SOCK_STREAM)
+      clientSock.connect((SERVER_ADDR, SERVER_PORT))
+      msgPack = pickle.dumps(logList)
+      clientSock.send(msgPack)
+      clientSock.close()
       
       # Reset the handshake counter
       handShakeCount = 0
@@ -235,6 +235,6 @@ while 1:
 
   # Tell all processes that I have no more messages to send
   for addrToSend in PEERS:
-    msg = (-1,-1)
+    msg = (-1,-1, msgHandler.clock, 'final')
     msgPack = pickle.dumps(msg)
     sendSocket.sendto(msgPack, (addrToSend,PEER_UDP_PORT))
