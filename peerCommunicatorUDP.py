@@ -98,15 +98,13 @@ class MsgHandler(threading.Thread):
       self.clock = max(self.clock, msg[2]) + 1 # update Lamport's clock
         
       if msg[3] == 'data':
-        print('data')
         self.pending.append(msg) # add msg to queue
         self.clock += 1 # update clock
         newMsg = (msg[0], msg[1], self.clock, 'ack')
         msgPack = pickle.dumps(newMsg)
-        print(PEERS[msg[0]])
         sendSocket.sendto(msgPack, (PEERS[msg[0]], PEER_UDP_PORT)) # send ack to sender
+      
       elif msg[3] == 'ack':
-        print('ack')
         self.ack.append((msg[0], msg[1], msg[2])) # (process, msg, clock)
         # Search menssage
         for i in range(len(self.pending)):
@@ -130,22 +128,22 @@ class MsgHandler(threading.Thread):
             self.clock += 1
             for addrToSend in PEERS: # send the final clock to all peers
               sendSocket.sendto(msgPack, (addrToSend,PEER_UDP_PORT))
-      else: # msg[3] == 'final'
-        print('final')
-        if msg[0] == -1:   # count the 'stop' messages from the other processes
-          stopCount = stopCount + 1
-          if stopCount == N:
-            break  # stop loop when all other processes have finished
-        else: 
-          for i in range(len(self.pending)):
-            if msg[0] == self.pending[i][0] and msg[1] == self.pending[i][1]:
-              position = i
-              break
+      
+      elif msg[3] == 'final': 
+        for i in range(len(self.pending)):
+          if msg[0] == self.pending[i][0] and msg[1] == self.pending[i][1]:
+            position = i
+            break
             
-          self.pending[position] = (msg[0], msg[1], msg[2], msg[3])
+        self.pending[position] = (msg[0], msg[1], msg[2], msg[3])
 
-          print('Message ' + str(msg[1]) + ' from process ' + str(msg[0]))
-          logList.append(msg)
+        print('Message ' + str(msg[1]) + ' from process ' + str(msg[0]))
+        logList.append(msg)
+      
+      elif msg[3] == 'stop':
+        stopCount = stopCount + 1
+        if stopCount == N:
+          break  # stop loop when all other processes have finished
           
       # Write log file
       logFile = open('logfile'+str(myself)+'.log', 'w')
@@ -228,6 +226,6 @@ while 1:
 
   # Tell all processes that I have no more messages to send
   for addrToSend in PEERS:
-    msg = (-1,-1, msgHandler.clock, 'final')
+    msg = (-1, -1, -1, 'stop')
     msgPack = pickle.dumps(msg)
     sendSocket.sendto(msgPack, (addrToSend,PEER_UDP_PORT))
