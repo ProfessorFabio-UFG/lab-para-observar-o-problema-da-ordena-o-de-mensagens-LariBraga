@@ -112,6 +112,7 @@ class MsgHandler(threading.Thread):
           msgPack = pickle.dumps(msg)
           sendSocket.sendto(msgPack, (PEERS[msg[0]], PEER_UDP_PORT)) # send ack to sender
         elif msg[3] == 'ack':
+          print('ack')
           self.ack.append((msg[0], msg[1], msg[2])) # (process, msg, clock)
           # Search menssage
           for i in range(len(self.pending)):
@@ -137,6 +138,7 @@ class MsgHandler(threading.Thread):
               for addrToSend in PEERS: # send the final clock to all peers
                 sendSocket.sendto(msgPack, (addrToSend,PEER_UDP_PORT))
         else: # msg[3] == 'final'
+          print('final')
           if msg[0] == -1:   # count the 'stop' messages from the other processes
             stopCount = stopCount + 1
             if stopCount == N:
@@ -203,7 +205,6 @@ while 1:
   print('Handler started')
 
   PEERS = getListOfPeers()
-  print(PEERS)
   
   # Send handshakes
   # To do: Must continue sending until it gets a reply from each process
