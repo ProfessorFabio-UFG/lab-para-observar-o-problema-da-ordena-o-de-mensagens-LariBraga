@@ -103,6 +103,7 @@ class MsgHandler(threading.Thread):
         msgPack = self.sock.recv(32768)   # receive data from client
         msg = pickle.loads(msgPack)
         self.clock = max(self.clock, msg[2]) + 1 # update Lamport's clock
+        print(msg)
         
         if msg[3] == 'data':
           self.pending.append(msg) # add msg to queue
