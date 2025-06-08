@@ -148,7 +148,7 @@ class MsgHandler(threading.Thread):
 
   def deliver_ordered_messages(self, logList):
     global lamport_clock
-    global N # N é o número total de peers, assumimos que está acessível
+    global N # N é o número total de peers
 
     while message_queue:
       # Pega a mensagem com o menor timestamp da fila (não remove ainda)
