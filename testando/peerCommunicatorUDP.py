@@ -148,11 +148,11 @@ class MsgHandler(threading.Thread):
 
   def deliver_ordered_messages(self, logList):
     global lamport_clock
-    global N # N é o número total de peers, assumimos que está acessível
+    #global N # N é o número total de peers, assumimos que está acessível
 
     while message_queue:
       # Pega a mensagem com o menor timestamp da fila (não remove ainda)
-      next_msg_timestamp, next_msg_sender_id, next_msg_number = message_queue[0]
+      #next_msg_timestamp, next_msg_sender_id, next_msg_number = message_queue[0]
     
       with clock_and_queue_lock:
         popped_msg = heapq.heappop(message_queue)
