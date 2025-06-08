@@ -100,7 +100,7 @@ class MsgHandler(threading.Thread):
 
       stopCount=0 
       while True:                
-        msgPack = self.sock.recv(1024)   # receive data from client
+        msgPack = self.sock.recv(32768)   # receive data from client
         msg = pickle.loads(msgPack)
         self.clock = max(self.clock, msg[2]) + 1 # update Lamport's clock
         
