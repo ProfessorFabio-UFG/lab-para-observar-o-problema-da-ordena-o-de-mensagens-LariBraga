@@ -203,6 +203,7 @@ while 1:
   print('Handler started')
 
   PEERS = getListOfPeers()
+  print(PEERS)
   
   # Send handshakes
   # To do: Must continue sending until it gets a reply from each process
