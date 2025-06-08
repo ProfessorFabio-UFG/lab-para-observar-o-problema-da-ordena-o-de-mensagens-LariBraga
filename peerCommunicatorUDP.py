@@ -148,8 +148,6 @@ class MsgHandler(threading.Thread):
                 break
             
             self.pending[position][2] = msg[2]
-            self.pending = sorted(self.pending, key=itemgetter(2)) # orderning for clock
-            self.pending = sorted(self.pending, key=itemgetter(3), reverse=True) # ordernig for type
 
             print('Message ' + str(msg[1]) + ' from process ' + str(msg[0]))
             logList.append(msg)
