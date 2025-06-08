@@ -120,8 +120,9 @@ class MsgHandler(threading.Thread):
           heapq.heappush(message_queue, (msg_timestamp, sender_id, msg_number))
                 
         print(f'Received message (LC: {msg_timestamp}): {msg_number} from process {sender_id}. Queue size: {len(message_queue)}')
-        # Tenta entregar as mensagens ordenadamente
-        self.deliver_ordered_messages(logList)
+      
+      # Tenta entregar as mensagens ordenadamente
+      self.deliver_ordered_messages(logList)
     
     # Garante que todas as mensagens na fila sejam entregues antes de finalizar
     while message_queue:
@@ -153,11 +154,11 @@ class MsgHandler(threading.Thread):
       # Pega a mensagem com o menor timestamp da fila (não remove ainda)
       next_msg_timestamp, next_msg_sender_id, next_msg_number = message_queue[0]
     
-    with clock_and_queue_lock:
-      popped_msg = heapq.heappop(message_queue)
+      with clock_and_queue_lock:
+        popped_msg = heapq.heappop(message_queue)
 
-    logList.append((popped_msg[1], popped_msg[2])) # Armazena (ID_remetente, número_mensagem)
-    print(f'DELIVERED: Message {popped_msg[2]} from process {popped_msg[1]} (LC: {popped_msg[0]})')
+      logList.append((popped_msg[1], popped_msg[2])) # Armazena (ID_remetente, número_mensagem)
+      print(f'DELIVERED: Message {popped_msg[2]} from process {popped_msg[1]} (LC: {popped_msg[0]})')
 
 # Function to wait for start signal from comparison server:
 def waitToStart():
