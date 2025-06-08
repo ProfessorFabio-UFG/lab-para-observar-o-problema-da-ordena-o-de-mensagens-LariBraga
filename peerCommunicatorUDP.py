@@ -12,8 +12,6 @@ from requests import get
 # Counter to make sure we have received handshakes from all other processes
 handShakeCount = 0
 
-handConfirm = 0
-
 PEERS = []
 
 # UDP sockets to send and receive data messages:
@@ -74,8 +72,6 @@ class MsgHandler(threading.Thread):
     #global handShakes
     global handShakeCount
 
-    global handConfirm
-    
     logList = []
     
     # Wait until handshakes are received from all other processes
@@ -92,68 +88,62 @@ class MsgHandler(threading.Thread):
         #handShakes[msg[1]] = 1
         print('--- Handshake received: ', msg[1])
 
-    handConfirm += 1
 
-    if True:
+    print('Secondary Thread: Received all handshakes. Entering the loop to receive messages.')
 
-      print('Secondary Thread: Received all handshakes. Entering the loop to receive messages.')
-
-      stopCount=0 
-      while True:                
-        msgPack = self.sock.recv(32768)   # receive data from client
-        msg = pickle.loads(msgPack)
-        self.clock = max(self.clock, msg[2]) + 1 # update Lamport's clock
-        print(msg)
+    stopCount=0 
+    while True:                
+      msgPack = self.sock.recv(32768)   # receive data from client
+      msg = pickle.loads(msgPack)
+      self.clock = max(self.clock, msg[2]) + 1 # update Lamport's clock
         
-        if msg[3] == 'data':
-          self.pending.append(msg) # add msg to queue
-          msg[3] = 'ack'
-          self.clock += 1 # update clock
-          msg[2] = self.clock
-          msgPack = pickle.dumps(msg)
-          sendSocket.sendto(msgPack, (PEERS[msg[0]], PEER_UDP_PORT)) # send ack to sender
-        elif msg[3] == 'ack':
-          print('ack')
-          self.ack.append((msg[0], msg[1], msg[2])) # (process, msg, clock)
-          # Search menssage
+      if msg[3] == 'data':
+        self.pending.append(msg) # add msg to queue
+        self.clock += 1 # update clock
+        newMsg = (msg[0], msg[1], self.clock, 'ack')
+        msgPack = pickle.dumps(newMsg)
+        sendSocket.sendto(msgPack, (PEERS[msg[0]], PEER_UDP_PORT)) # send ack to sender
+      elif msg[3] == 'ack':
+        print('ack')
+        self.ack.append((msg[0], msg[1], msg[2])) # (process, msg, clock)
+        # Search menssage
+        for i in range(len(self.pending)):
+          if msg[0] == self.pending[i][0] and msg[1] == self.pending[i][1]:
+            position = i
+            break
+
+        if msg[0] == myself:
+          if self.ack.count((msg[0], msg[1], msg[2])) == N: # all acks arrived
+            j = 0
+            while j <= N: # define clock
+              if self.ack[j] == (msg[0], msg[1], msg[2]):
+                j += 1
+                if j == 1:
+                  maxClock = self.ack[j][2]
+                elif maxClock < self.ack[j][2]:
+                  maxClock = self.ack[j][2]
+
+            newMsg = (msg[0], msg[1], maxClock, 'final') # 'final' indicates that the final clock has been decided
+            msgPack = pickle.dumps(newMsg)
+            self.clock += 1
+            for addrToSend in PEERS: # send the final clock to all peers
+              sendSocket.sendto(msgPack, (addrToSend,PEER_UDP_PORT))
+      else: # msg[3] == 'final'
+        print('final')
+        if msg[0] == -1:   # count the 'stop' messages from the other processes
+          stopCount = stopCount + 1
+          if stopCount == N:
+            break  # stop loop when all other processes have finished
+        else: 
           for i in range(len(self.pending)):
             if msg[0] == self.pending[i][0] and msg[1] == self.pending[i][1]:
               position = i
               break
-
-          if msg[0] == myself:
-            if self.ack.count((msg[0], msg[1], msg[2])) == N: # all acks arrived
-              j = 0
-              while j <= N: # define clock
-                if self.ack[j] == (msg[0], msg[1], msg[2]):
-                  j += 1
-                  if j == 1:
-                    maxClock = self.ack[j][2]
-                  elif maxClock < self.ack[j][2]:
-                    maxClock = self.ack[j][2]
-
-              msg[2] = maxClock
-              msg[3] = 'final' # indicates that the final clock has been decided
-              msgPack = pickle.dumps(msg)
-              self.clock += 1
-              for addrToSend in PEERS: # send the final clock to all peers
-                sendSocket.sendto(msgPack, (addrToSend,PEER_UDP_PORT))
-        else: # msg[3] == 'final'
-          print('final')
-          if msg[0] == -1:   # count the 'stop' messages from the other processes
-            stopCount = stopCount + 1
-            if stopCount == N:
-              break  # stop loop when all other processes have finished
-          else: 
-            for i in range(len(self.pending)):
-              if msg[0] == self.pending[i][0] and msg[1] == self.pending[i][1]:
-                position = i
-                break
             
-            self.pending[position][2] = msg[2]
+          self.pending[position] = (msg[0], msg[1], msg[2], msg[3])
 
-            print('Message ' + str(msg[1]) + ' from process ' + str(msg[0]))
-            logList.append(msg)
+          print('Message ' + str(msg[1]) + ' from process ' + str(msg[0]))
+          logList.append(msg)
           
       # Write log file
       logFile = open('logfile'+str(myself)+'.log', 'w')
