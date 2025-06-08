@@ -152,7 +152,7 @@ class MsgHandler(threading.Thread):
             self.pending = sorted(self.pending, key=itemgetter(3), reverse=True) # ordernig for type
 
             print('Message ' + str(msg[1]) + ' from process ' + str(msg[0]))
-            logList.append((msg[0], msg[1]))
+            logList.append(msg)
           
       # Write log file
       logFile = open('logfile'+str(myself)+'.log', 'w')
