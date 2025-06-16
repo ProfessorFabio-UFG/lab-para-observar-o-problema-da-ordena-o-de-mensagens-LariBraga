@@ -162,7 +162,7 @@ class MsgHandler(threading.Thread):
         popped_msg = heapq.heappop(message_queue)
 
       logList.append((popped_msg[1], popped_msg[2])) # Armazena (ID_remetente, número_mensagem)
-      print(f'DELIVERED: Message {popped_msg[2]} from process {popped_msg[1]} (LC: {popped_msg[0]})')
+      # print(f'DELIVERED: Message {popped_msg[2]} from process {popped_msg[1]} (LC: {popped_msg[0]})')
 
 # Function to wait for start signal from comparison server:
 def waitToStart():
