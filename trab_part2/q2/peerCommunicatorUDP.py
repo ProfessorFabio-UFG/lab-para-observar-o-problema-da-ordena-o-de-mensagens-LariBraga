@@ -105,6 +105,7 @@ class MsgHandler(threading.Thread):
     while True:                
       msgPack = self.sock.recv(1024)   # receive data from client
       msg = pickle.loads(msgPack)
+      global count
       
       if msg[0] == -1:   # count the 'stop' messages from the other processes
         stopCount = stopCount + 1
