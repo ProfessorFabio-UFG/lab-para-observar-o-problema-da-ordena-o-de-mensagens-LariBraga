@@ -10,7 +10,7 @@ import heapq
 #handShakes = [] # not used; only if we need to check whose handshake is missing
 
 # Counter to make sure we have received handshakes from all other processes
-handShakeCount = 0
+handShakeCount = 5
 
 PEERS = []
 
