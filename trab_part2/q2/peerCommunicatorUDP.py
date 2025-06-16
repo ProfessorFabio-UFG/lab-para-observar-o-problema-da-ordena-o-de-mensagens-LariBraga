@@ -10,7 +10,7 @@ import heapq
 #handShakes = [] # not used; only if we need to check whose handshake is missing
 
 # Counter to make sure we have received handshakes from all other processes
-handShakeCount = 5
+handShakeCount = 0
 
 PEERS = []
 
@@ -22,7 +22,7 @@ message_queue = []
 # Lock para proteger o acesso ao relógio de Lamport e à fila de mensagens
 clock_and_queue_lock = threading.Lock()
 
-count = 0
+count = 5
 
 # UDP sockets to send and receive data messages:
 # Create send socket
